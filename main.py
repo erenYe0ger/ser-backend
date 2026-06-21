@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.core.config import settings
 from app.core.database import Base, engine
@@ -7,6 +7,14 @@ from app.core.database import Base, engine
 # Create the FastAPI application instance
 app = FastAPI(title=settings.APP_NAME)
 
+# Allow React frontend to call the backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create all database tables when the application starts
 @app.on_event("startup")
