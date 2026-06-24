@@ -28,8 +28,20 @@ async def predict(
     # Check whether a prediction already exists in Redis
     cached_result = await get_cached_result(file_hash)
 
-    # Return cached result immediately if found
+    # If found in cache, still save a prediction record
     if cached_result is not None:
+        prediction = Prediction(
+            audio_filename=file.filename or "audio.wav",
+            emotion=cached_result["emotion"],
+            confidence=cached_result["confidence"],
+            all_emotions=cached_result["all_emotions"],
+            user_id=current_user["sub"],
+        )
+
+        db.add(prediction)
+        await db.commit()
+        await db.refresh(prediction)
+
         return {
             **cached_result,
             "source": "cache",
