@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     # Hugging Face Spaces endpoint URL
     HF_SPACES_URL: str
 
+    # JWT signing secret
+    JWT_SECRET_KEY: str
+
+    # Google OAuth client ID
+    GOOGLE_CLIENT_ID: str
+
     # Application name
     APP_NAME: str = "SER Backend"
 

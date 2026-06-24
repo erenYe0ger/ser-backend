@@ -30,3 +30,6 @@ class Prediction(Base):
         nullable=False,
         default=datetime.utcnow,
     )
+
+    # User who created the prediction (nullable for existing records)
+    user_id: Mapped[str | None] = mapped_column(String, nullable=True)

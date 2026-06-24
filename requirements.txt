@@ -6,3 +6,6 @@ pydantic-settings==2.7.1     # Environment-based application settings
 httpx==0.28.1                # Async HTTP client for external API calls
 redis==5.2.1                 # Async Redis client and caching
 python-multipart==0.0.20     # Multipart form-data support for file uploads
+python-jose[cryptography]==3.3.0  # JWT creation and verification
+google-auth==2.40.3          # Google ID token verification
+requests==2.32.3

@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.prediction import Prediction
 from app.services.cache import get_cached_result, set_cached_result
 from app.services.inference import get_prediction
@@ -16,6 +17,7 @@ router = APIRouter()
 async def predict(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     # Read the uploaded audio file into memory
     file_bytes = await file.read()
@@ -45,6 +47,7 @@ async def predict(
         emotion=result["emotion"],
         confidence=result["confidence"],
         all_emotions=result["all_emotions"],
+        user_id=current_user["sub"],
     )
 
     db.add(prediction)
@@ -65,10 +68,12 @@ async def predict(
 async def get_history(
     limit: int = 10,
     db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     # Fetch the most recent predictions ordered by creation time
     stmt = (
         select(Prediction)
+        .where(Prediction.user_id == current_user["sub"])
         .order_by(Prediction.created_at.desc())
         .limit(limit)
     )

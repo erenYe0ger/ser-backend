@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
+from app.routers.auth import router as auth_router
 from app.core.config import settings
 from app.core.database import Base, engine
 
@@ -28,6 +29,7 @@ async def startup() -> None:
 
 # Register API routes under the versioned API prefix
 app.include_router(router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
 
 
 # Health check / root endpoint
