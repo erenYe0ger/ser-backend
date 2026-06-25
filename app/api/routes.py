@@ -190,6 +190,8 @@ async def get_history(
             "emotion": prediction.emotion,
             "confidence": prediction.confidence,
             "created_at": prediction.created_at,
+            "audio_url": prediction.audio_url,
+            "timeline_data": prediction.timeline_data,
         }
         for prediction in predictions
     ]
