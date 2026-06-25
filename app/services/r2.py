@@ -25,7 +25,4 @@ async def upload_audio(file_bytes: bytes, filename: str) -> str:
         ContentType="audio/wav",
     )
 
-    return (
-        f"https://{settings.R2_BUCKET_NAME}."
-        f"{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/{key}"
-    )
+    return f"{settings.R2_PUBLIC_URL}/{key}"
