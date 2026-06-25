@@ -15,7 +15,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://ser_user:ser_password@postgres:5432/ser_db
+      # DATABASE_URL: postgresql+asyncpg://ser_user:ser_password@postgres:5432/ser_db
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
 
   # PostgreSQL database service

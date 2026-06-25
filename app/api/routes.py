@@ -1,4 +1,6 @@
+import asyncio
 import hashlib
+from collections import Counter
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy import select
@@ -8,7 +10,9 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.prediction import Prediction
 from app.services.cache import get_cached_result, set_cached_result
+from app.services.chunker import chunk_audio
 from app.services.inference import get_prediction
+from app.services.r2 import upload_audio
 
 router = APIRouter()
 
@@ -73,6 +77,91 @@ async def predict(
     return {
         **result,
         "source": "model",
+    }
+
+
+@router.post("/predict/timeline")
+async def predict_timeline(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    file_bytes = await file.read()
+    filename = file.filename or "audio.wav"
+
+    # Upload original audio to Cloudflare R2
+    audio_url = await upload_audio(file_bytes, filename)
+
+    # Chunk audio in a worker thread
+    chunks = await asyncio.to_thread(chunk_audio, file_bytes)
+
+    semaphore = asyncio.Semaphore(5)
+
+    async def process_chunk(chunk: dict):
+        async with semaphore:
+            try:
+                return await get_prediction(
+                    chunk["audio_bytes"],
+                    "chunk.wav",
+                )
+            except Exception:
+                return None
+
+    results = await asyncio.gather(
+        *(process_chunk(chunk) for chunk in chunks)
+    )
+
+    timeline_data = []
+
+    for chunk, result in zip(chunks, results):
+        if result is None:
+            continue
+
+        timeline_data.append(
+            {
+                "start_time": chunk["start_ms"] / 1000.0,
+                "end_time": chunk["end_ms"] / 1000.0,
+                "emotion": result["emotion"],
+                "confidence": result["confidence"],
+            }
+        )
+
+    if timeline_data:
+        dominant_emotion = Counter(
+            item["emotion"] for item in timeline_data
+        ).most_common(1)[0][0]
+
+        average_confidence = (
+            sum(item["confidence"] for item in timeline_data)
+            / len(timeline_data)
+        )
+    else:
+        dominant_emotion = "unknown"
+        average_confidence = 0.0
+
+    prediction = Prediction(
+        audio_filename=filename,
+        emotion=dominant_emotion,
+        confidence=average_confidence,
+        all_emotions=None,
+        audio_url=audio_url,
+        timeline_data=timeline_data,
+        user_id=(
+            current_user["sub"]
+            if current_user["user_type"] != "guest"
+            else None
+        ),
+    )
+
+    db.add(prediction)
+    await db.commit()
+    await db.refresh(prediction)
+
+    return {
+        "audio_url": audio_url,
+        "timeline_data": timeline_data,
+        "emotion": dominant_emotion,
+        "confidence": average_confidence,
     }
 
 

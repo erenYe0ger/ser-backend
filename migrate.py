@@ -50,6 +50,22 @@ async def migrate():
         )
         print("✓ user_id column added to predictions or already exists")
 
+        await conn.execute(
+            """
+            ALTER TABLE predictions
+            ADD COLUMN IF NOT EXISTS audio_url VARCHAR
+            """
+        )
+        print("✓ audio_url column added to predictions or already exists")
+
+        await conn.execute(
+            """
+            ALTER TABLE predictions
+            ADD COLUMN IF NOT EXISTS timeline_data JSONB
+            """
+        )
+        print("✓ timeline_data column added to predictions or already exists")
+
         print("✓ Migration completed successfully")
 
     finally:

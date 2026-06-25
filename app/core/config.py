@@ -17,6 +17,18 @@ class Settings(BaseSettings):
     # Google OAuth client ID
     GOOGLE_CLIENT_ID: str
 
+    # Cloudflare R2 account ID
+    R2_ACCOUNT_ID: str
+
+    # Cloudflare R2 access key ID
+    R2_ACCESS_KEY_ID: str
+
+    # Cloudflare R2 secret access key
+    R2_SECRET_ACCESS_KEY: str
+
+    # Cloudflare R2 bucket name
+    R2_BUCKET_NAME: str
+
     # Application name
     APP_NAME: str = "SER Backend"
 

@@ -9,3 +9,5 @@ python-multipart==0.0.20     # Multipart form-data support for file uploads
 python-jose[cryptography]==3.3.0  # JWT creation and verification
 google-auth==2.40.3          # Google ID token verification
 requests==2.32.3
+boto3==1.39.1                # AWS SDK for Python
+pydub==0.25.1                # Audio processing and manipulation
