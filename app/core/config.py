@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Cloudflare R2 bucket name
     R2_BUCKET_NAME: str
 
+    # Cloudflare R2 public URL
+    R2_PUBLIC_URL: str
+
     # Application name
     APP_NAME: str = "SER Backend"
 
