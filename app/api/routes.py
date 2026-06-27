@@ -100,20 +100,41 @@ async def predict_timeline(
     async def process_chunk(chunk: dict):
         async with semaphore:
             try:
-                return await get_prediction(
+                chunk_hash = hashlib.sha256(
+                    chunk["audio_bytes"]
+                ).hexdigest()
+
+                cached_result = await get_cached_result(chunk_hash)
+                if cached_result is not None:
+                    return cached_result, True
+
+                result = await get_prediction(
                     chunk["audio_bytes"],
                     "chunk.wav",
                 )
+
+                await set_cached_result(chunk_hash, result)
+
+                return result, False
+
             except Exception:
-                return None
+                return None, False
 
     results = await asyncio.gather(
         *(process_chunk(chunk) for chunk in chunks)
     )
 
+    all_from_cache = all(
+        from_cache
+        for result, from_cache in results
+        if result is not None
+    )
+
     timeline_data = []
 
-    for chunk, result in zip(chunks, results):
+    for chunk, item in zip(chunks, results):
+        result, _ = item
+
         if result is None:
             continue
 
@@ -162,6 +183,7 @@ async def predict_timeline(
         "timeline_data": timeline_data,
         "emotion": dominant_emotion,
         "confidence": average_confidence,
+        "source": "cache" if all_from_cache else "model",
     }
 
 
