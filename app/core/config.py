@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Cloudflare R2 public URL
     R2_PUBLIC_URL: str
 
+    # Maximum allowed upload size (10 MB)
+    MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024
+
     # Application name
     APP_NAME: str = "SER Backend"
 

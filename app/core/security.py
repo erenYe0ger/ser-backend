@@ -2,8 +2,9 @@
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, Request
 from jose import JWTError, jwt
+from slowapi.util import get_remote_address
 
 from app.core.config import settings
 
@@ -50,6 +51,41 @@ def verify_jwt_token(token: str) -> dict:
             status_code=401,
             detail="Invalid or expired token",
         )
+
+
+def get_rate_limit_key(request: Request) -> str:
+    """
+    Return a rate-limit key for the request.
+
+    Priority:
+    1. Authenticated non-guest user -> user:<user_id>
+    2. Fallback -> ip:<client_ip>
+
+    Never raises an exception.
+    """
+    try:
+        authorization = request.headers.get("Authorization")
+
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.removeprefix("Bearer ").strip()
+
+            if token:
+                payload = jwt.decode(
+                    token,
+                    settings.JWT_SECRET_KEY,
+                    algorithms=["HS256"],
+                )
+
+                # Treat guest tokens like unauthenticated clients
+                if payload.get("user_type") != "guest":
+                    sub = payload.get("sub")
+                    if sub:
+                        return f"user:{sub}"
+    except Exception:
+        pass
+
+    ip = get_remote_address(request) or "unknown"
+    return f"ip:{ip}"
 
 
 async def get_current_user(

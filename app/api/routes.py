@@ -2,11 +2,13 @@ import asyncio
 import hashlib
 from collections import Counter
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.limiter import limiter
 from app.core.security import get_current_user
 from app.models.prediction import Prediction
 from app.services.cache import get_cached_result, set_cached_result
@@ -18,13 +20,21 @@ router = APIRouter()
 
 
 @router.post("/predict")
+@limiter.limit("20/minute")
 async def predict(
+    request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     # Read the uploaded audio file into memory
     file_bytes = await file.read()
+
+    if len(file_bytes) > settings.MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="File exceeds maximum size of 10MB",
+        )
 
     # Compute a SHA-256 hash of the file contents for cache lookup
     file_hash = hashlib.sha256(file_bytes).hexdigest()
@@ -81,12 +91,21 @@ async def predict(
 
 
 @router.post("/predict/timeline")
+@limiter.limit("6/minute")
 async def predict_timeline(
+    request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     file_bytes = await file.read()
+
+    if len(file_bytes) > settings.MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="File exceeds maximum size of 10MB",
+        )
+
     filename = file.filename or "audio.wav"
 
     # Upload original audio to Cloudflare R2
