@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import boto3
 
@@ -15,7 +16,7 @@ s3_client = boto3.client(
 
 
 async def upload_audio(file_bytes: bytes, filename: str) -> str:
-    key = f"audio/{filename}"
+    key = f"audio/{int(time.time() * 1000)}_{filename}"
 
     await asyncio.to_thread(
         s3_client.put_object,
