@@ -6,8 +6,8 @@ from pydub import AudioSegment
 def chunk_audio(file_bytes: bytes) -> list[dict]:
     audio = AudioSegment.from_file(io.BytesIO(file_bytes))
 
-    window_ms = 3000
-    step_ms = 1500
+    window_ms = 4000
+    step_ms = 2000
 
     if len(audio) <= window_ms:
         buffer = io.BytesIO()
